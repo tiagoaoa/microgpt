@@ -25,8 +25,15 @@ gptcli -s mysession -p "Summarize this article"
 
 - `--new`: perform a one-off call that skips saving any state.
 - `-p/--prompt`: pass the prompt inline; if omitted the CLI reads from stdin.
+- `-sin/--stdin`: append piped stdin to the `-p` prompt (e.g., prepend instructions, append source text).
 - `-s/--state`: provide a friendly name for the conversation. Files live under `~/.cache/gptcli/NAME`.
 - `--system`, `--model`, `--temperature`: optional overrides for the conversation configuration.
+
+Combine inline instructions with piped content like so:
+
+```bash
+cat report.md | gptcli -s audit -p "Summarize the stdin content above" --stdin
+```
 
 ## Conversation State Behavior
 
