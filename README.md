@@ -35,6 +35,14 @@ Combine inline instructions with piped content like so:
 cat report.md | gptcli -s audit -p "Summarize the stdin content above" --stdin
 ```
 
+Manage saved states directly from the CLI:
+
+```bash
+gptcli ls                                  # list state files in ~/.cache/gptcli
+gptcli rm scratch                          # delete the "scratch" state
+gptcli rename scratch scratch-archive      # rename a state
+```
+
 ## Conversation State Behavior
 
 - All state files are now stored inside `~/.cache/gptcli/`.

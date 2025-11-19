@@ -164,6 +164,20 @@ def main(argv: List[str]) -> int:
         add_help=True,
     )
 
+    subparsers = parser.add_subparsers(dest="command")
+
+    ls_parser = subparsers.add_parser("ls", help="List available saved states and exit.")
+    ls_parser.set_defaults(command="ls")
+
+    rm_parser = subparsers.add_parser("rm", help="Delete a saved state and exit.")
+    rm_parser.add_argument("name", help="Name of the state to delete.")
+    rm_parser.set_defaults(command="rm")
+
+    ren_parser = subparsers.add_parser("rename", help="Rename a saved state and exit.")
+    ren_parser.add_argument("old", help="Existing state name.")
+    ren_parser.add_argument("new", help="New name for the state.")
+    ren_parser.set_defaults(command="rename")
+
     parser.add_argument("-p", "--prompt", help="Prompt text; if omitted, read from stdin.")
     parser.add_argument("-sin", "--stdin", action="store_true", help="Force stdin to be read too, even with -p.")
     parser.add_argument(
@@ -178,6 +192,54 @@ def main(argv: List[str]) -> int:
     parser.add_argument("--temperature", type=float, default=0.2, help="Sampling temperature (default: 0.2).")
 
     args = parser.parse_args(argv)
+
+    if args.command == "ls":
+        states = list_state_files()
+        if not states:
+            print("No saved states.")
+            return 0
+        for state in sorted(states, key=lambda p: p.name.lower()):
+            print(state.name)
+        return 0
+
+    if args.command == "rm":
+        target = ensure_state_dir() / Path(args.name).name
+        if not target.exists():
+            die(f"State '{target.name}' does not exist.")
+        try:
+            target.unlink()
+        except Exception as e:
+            die(f"Unable to delete state '{target.name}': {e}")
+        try:
+            if LAST_STATE_FILE.exists():
+                last = LAST_STATE_FILE.read_text(encoding="utf-8").strip()
+                if last == target.name:
+                    LAST_STATE_FILE.unlink()
+        except OSError:
+            pass
+        print(f"Deleted state '{target.name}'.")
+        return 0
+
+    if args.command == "rename":
+        src = ensure_state_dir() / Path(args.old).name
+        dst = ensure_state_dir() / Path(args.new).name
+        if not src.exists():
+            die(f"State '{src.name}' does not exist.")
+        if dst.exists():
+            die(f"State '{dst.name}' already exists.")
+        try:
+            src.rename(dst)
+        except Exception as e:
+            die(f"Unable to rename state '{src.name}': {e}")
+        try:
+            if LAST_STATE_FILE.exists():
+                last = LAST_STATE_FILE.read_text(encoding="utf-8").strip()
+                if last == src.name:
+                    LAST_STATE_FILE.write_text(dst.name, encoding="utf-8")
+        except OSError:
+            pass
+        print(f"Renamed '{src.name}' -> '{dst.name}'.")
+        return 0
 
     ensure_api_key()
 
